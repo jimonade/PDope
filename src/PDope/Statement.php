@@ -93,8 +93,8 @@ class Statement {
   *
   * @example
   * <code>
-  * $pdo->add_paramaters_auto(TRUE); //require issset checks on model_object
-  * $pdo->add_paramaters_auto(FALSE); //do not require issset checks on model_object
+  * $pdo->add_parameters_auto(TRUE); //require issset checks on model_object
+  * $pdo->add_parameters_auto(FALSE); //do not require issset checks on model_object
   * </code>
   *
   * @return  VOID
@@ -102,7 +102,7 @@ class Statement {
   * @since   2016-5-21
   * @author  Jim Harney <jim@schooldatebooks.com>
   **/
-  public function add_paramaters_auto($require_isset=FALSE) {
+  public function add_parameters_auto($require_isset=FALSE) {
     foreach ($this->model_object->get_data_properties($require_isset) as $property) {
       $this->add_parameter($property->name, $property->get_type());
     }   
@@ -189,8 +189,8 @@ class Statement {
   *
   * @example
   * <code>
-  * $pdo->add_where_paramaters_auto(TRUE); //require issset checks on model_object
-  * $pdo->add_where_paramaters_auto(FALSE); //do not require issset checks on model_object
+  * $pdo->add_where_parameters_auto(TRUE); //require issset checks on model_object
+  * $pdo->add_where_parameters_auto(FALSE); //do not require issset checks on model_object
   * </code>
   *
   * @return  VOID
@@ -198,7 +198,7 @@ class Statement {
   * @since   2016-5-21
   * @author  Jim Harney <jim@schooldatebooks.com>
   **/
-  public function add_where_paramaters_auto($require_isset=FALSE) {
+  public function add_where_parameters_auto($require_isset=FALSE) {
     foreach ($this->model_object->get_data_properties($require_isset) as $property) {
       $this->add_where_parameter($property->name, $property->get_type());
     }   
@@ -278,8 +278,8 @@ class Statement {
   *
   * @example
   * <code>
-  * $this->bind_parameters($this->paramaters);
-  * $this->bind_parameters($this->where_paramaters);
+  * $this->bind_parameters($this->parameters);
+  * $this->bind_parameters($this->where_parameters);
   * </code>
   *
   * @return  VOID
