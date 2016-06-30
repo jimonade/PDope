@@ -699,7 +699,7 @@ class Statement {
   private function build_where_sql() {
 
     //if we used a custom where clause, we do not need to build it
-    if ($this->used_custom_where) {
+    if ($this->used_custom_where || count($this->where_parameters) < 1) {
       return;
     }
 
