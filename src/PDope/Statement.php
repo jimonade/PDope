@@ -132,16 +132,6 @@ class Statement {
 
     $this->log_debug("add_parameter() name [$name], type [$type], value [$value]");
 
-    // translate all empty values to special DB NULL type
-    if (
-      (empty($value))
-      && (!is_bool($value))
-      && ($type != "UUID")
-      && ($type != "NOW")
-    ) {
-      $type = "NULL";
-    }
-
     //if parameter already exists, then overwrite it
     $exists=FALSE;
     foreach($this->parameters as $parameter) {
