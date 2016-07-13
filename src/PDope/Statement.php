@@ -132,16 +132,6 @@ class Statement {
 
     $this->log_debug("add_parameter() name [$name], type [$type], value [$value]");
 
-    // translate all empty values to special DB NULL type
-    if (
-      (empty($value) && !is_string($value))
-      && (!is_bool($value))
-      && ($type != "UUID")
-      && ($type != "NOW")
-    ) {
-      $type = "NULL";
-    }
-
     //if parameter already exists, then overwrite it
     $exists=FALSE;
     foreach($this->parameters as $parameter) {
@@ -825,27 +815,6 @@ class Statement {
     $this->where_parameters = NULL;
     $this->sql_where = $custom_where->get_where();
     $this->custom_where_rules = $custom_where->get_rules();
-  }
-
-  /**
-  * allows use of a raw SQL where clause to account for things like grouping
-  * 
-  * @example
-  * <code>
-  * $where = "WHERE (x = 1 OR x = 2) AND (y = 3 OR y = 4)"
-  * $db->use_raw_where($where)
-  * </code>
-  * 
-  * @return VOID
-  * 
-  * @since 2016-7-12
-  * @author Matthew Ess <matthew@schooldatebooks.com>
-  **/
-  public function use_raw_where($custom_where) {
-    $this->used_custom_where = TRUE;
-    $this->where_parameters = NULL;
-    $this->sql_where = $custom_where;
-    $this->custom_where_rules = NULL;
   }
 
 }
