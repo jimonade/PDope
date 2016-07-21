@@ -128,7 +128,14 @@ class Statement {
     if (empty($type)) {
       $type = $this->model_object->get_data_property($name)->get_type();
     }
-    $value = $this->model_object->$name;
+    if ($type == "UUID") {
+      $value = \PDope\Utilities:: UUID();
+
+      //also write this back to the model object
+      $this->model_object->$name = $value;
+    } else {
+      $value = $this->model_object->$name;
+    }
 
     $this->log_debug("add_parameter() name [$name], type [$type], value [$value]");
 
@@ -292,14 +299,6 @@ class Statement {
 
       //skip these special paramater types
       if (in_array($type, array("NOW", "NULL"))) continue;
-
-      //handle this special paramater type
-      if ($type == "UUID") {
-        $value = \PDope\Utilities:: UUID();
-
-        //also write this back to the model object
-        $this->model_object->$name = $value;
-      }
 
       // $this->log_debug("bind_parameters() name [$name], value [$value], type [$type]");
 
