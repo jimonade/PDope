@@ -128,7 +128,14 @@ class Statement {
     if (empty($type)) {
       $type = $this->model_object->get_data_property($name)->get_type();
     }
-    $value = $this->model_object->$name;
+    if ($type == "UUID") {
+      $value = \PDope\Utilities:: UUID();
+
+      //also write this back to the model object
+      $this->model_object->$name = $value;
+    } else {
+      $value = $this->model_object->$name;
+    }
 
     $this->log_debug("add_parameter() name [$name], type [$type], value [$value]");
 
@@ -292,14 +299,6 @@ class Statement {
 
       //skip these special paramater types
       if (in_array($type, array("NOW", "NULL"))) continue;
-
-      //handle this special paramater type
-      if ($type == "UUID") {
-        $value = \PDope\Utilities:: UUID();
-
-        //also write this back to the model object
-        $this->model_object->$name = $value;
-      }
 
       // $this->log_debug("bind_parameters() name [$name], value [$value], type [$type]");
 
@@ -555,7 +554,7 @@ class Statement {
         $this->statement->execute();
         $results = $this->statement->fetchAll(\PDO::FETCH_OBJ);
         $this->log_debug("execute() found [".count($results)."] results", $results); 
-        return $results;
+        return self:: transform_boolean_values($results);
         break;
       case 'UPDATE':
         $this->statement = $this->pdo->prepare("{$this->sql}{$this->sql_where}");
@@ -815,6 +814,28 @@ class Statement {
     $this->where_parameters = NULL;
     $this->sql_where = $custom_where->get_where();
     $this->custom_where_rules = $custom_where->get_rules();
+  }
+
+  /**
+  * transforms query results that should be booleans to boolean literals from
+  * 0 or 1 tinyints.
+  *
+  * @return array
+  *
+  * @since 2016-7-18
+  * @author Matthew Ess <matthew@schooldatebooks.com>
+  **/
+
+  private function transform_boolean_values($results) {
+    foreach ($results as $result) {
+      foreach($this->model_object->get_data_properties() as $property) {
+        if (\PDope\Utilities:: get_pdo_type_from_generic_type($property->get_type()) == \PDO::PARAM_BOOL) {
+          $property_name = $property->name;
+          $result->$property_name = \Rhonda\Boolean:: evaluate($result->$property_name);
+        }
+      }
+    }
+    return $results;
   }
 
 }
