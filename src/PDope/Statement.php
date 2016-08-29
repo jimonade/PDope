@@ -616,8 +616,11 @@ class Statement {
       } else {
         $sql .= "\t, ";
       }
-
-      $sql .= "{$name} \n";
+      if($property->type == "ISO8601"){
+        $sql .= "DATE_FORMAT($name,'%Y-%m-%dT%H:%i:%s') as $name \n";
+      }else{
+        $sql .= "{$name} \n";
+      }
     }
 
     $sql .= "FROM \n\t{$this->table_name} \n";
