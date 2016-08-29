@@ -81,7 +81,7 @@ class Statement {
     if ($this->debug) {
       if (!empty($object_to_dump)) {
         error_log("$string_message \n" . print_r($object_to_dump, TRUE));   
-        error_log(""); //this fixes the spooky "php log breaks jasmine tests" problem
+        error_log(""); // this fixes the spooky "php log breaks jasmine tests" problem
       } else {
         error_log("$string_message");   
       }
@@ -93,8 +93,8 @@ class Statement {
   *
   * @example
   * <code>
-  * $pdo->add_parameters_auto(TRUE); //require issset checks on model_object
-  * $pdo->add_parameters_auto(FALSE); //do not require issset checks on model_object
+  * $pdo->add_parameters_auto(TRUE); // require issset checks on model_object
+  * $pdo->add_parameters_auto(FALSE); // do not require issset checks on model_object
   * </code>
   *
   * @return  VOID
@@ -124,15 +124,24 @@ class Statement {
   **/
   public function add_parameter($name, $type=NULL) {
 
-    //if we are not given a type, look it up in model_object
+    // if we are not given a type, look it up in model_object
     if (empty($type)) {
       $type = $this->model_object->get_data_property($name)->get_type();
     }
-    $value = $this->model_object->$name;
+
+    // check for and handle special type UUID
+    if ($type == "UUID") {
+      $value = \PDope\Utilities:: UUID();
+
+      // also write this back to the model object
+      $this->model_object->$name = $value;
+    } else {
+      $value = $this->model_object->$name;
+    }
 
     $this->log_debug("add_parameter() name [$name], type [$type], value [$value]");
 
-    //if parameter already exists, then overwrite it
+    // if parameter already exists, then overwrite it
     $exists=FALSE;
     foreach($this->parameters as $parameter) {
       if ($parameter->name == $name) {
@@ -179,8 +188,8 @@ class Statement {
   *
   * @example
   * <code>
-  * $pdo->add_where_parameters_auto(TRUE); //require issset checks on model_object
-  * $pdo->add_where_parameters_auto(FALSE); //do not require issset checks on model_object
+  * $pdo->add_where_parameters_auto(TRUE); // require issset checks on model_object
+  * $pdo->add_where_parameters_auto(FALSE); // do not require issset checks on model_object
   * </code>
   *
   * @return  VOID
@@ -210,18 +219,18 @@ class Statement {
   **/
   public function add_where_parameter($name, $type=NULL) {
 
-    //if we used a custom where clause, we do not need to add these parameters
+    // if we used a custom where clause, we do not need to add these parameters
     if ($this->used_custom_where) {
       return;
     }
 
-    //if we are not given a type, look it up in model_object
+    // if we are not given a type, look it up in model_object
     if (empty($type)) {
       $type = $this->model_object->get_data_property($name)->get_type();
     }
     // $this->log_debug("add_where_parameter() name [$name], type [$type]");
 
-    //if parameter already exists, then overwrite it
+    // if parameter already exists, then overwrite it
     $exists=FALSE;
     foreach($this->where_parameters as $parameter) {
       if ($parameter->name == $name) {
@@ -290,22 +299,19 @@ class Statement {
       $type = $parameter->type;
       // $this->log_debug("bind_parameters(), loop values, name [$name], value [$value], type [$type]");
 
-      //skip these special paramater types
+      // skip these special paramater types
       if (in_array($type, array("NOW", "NULL"))) continue;
-
-      //handle this special paramater type
-      if ($type == "UUID") {
-        $value = \PDope\Utilities:: UUID();
-
-        //also write this back to the model object
-        $this->model_object->$name = $value;
-      }
 
       // $this->log_debug("bind_parameters() name [$name], value [$value], type [$type]");
 
       if (is_array($value)) {
         if (\PDope\Utilities:: is_special_type($type)) {
           throw new \Exception("PDopeStatement bind_parameters(), array, does not support special type [{$type}]");
+        }  
+
+        // if empty array, then throw
+        if (count($value) == 0) {
+          throw new \Exception("PDopeStatement bind_parameters(), empty array [{$name}]");
         }  
 
         for ($i=0; $i < count($value); $i++) { 
@@ -315,8 +321,6 @@ class Statement {
         }
 
       } else {
-        if (in_array($type, array("NOW", "NULL"))) continue;
-
         $this->bind_value($name, $value, $type);
       }
     }
@@ -349,6 +353,12 @@ class Statement {
         if (\PDope\Utilities:: is_special_type($rule->type)) {
           throw new \Exception("PDopeCustomWhereBuilder bind_custom_where_rules(), array, does not support special type [{$rule->type}]");
         }        
+
+        // if empty array, then throw
+        if (count($rule->value) == 0) {
+          throw new \Exception("PDopeStatement bind_custom_where_rules(), empty array [{$name}]");
+        }  
+
         for ($j=0; $j < count($rule->value); $j++) { 
           $this->bind_value($rule->token[$j], $rule->value[$j], $rule->type);
         }
@@ -555,7 +565,7 @@ class Statement {
         $this->statement->execute();
         $results = $this->statement->fetchAll(\PDO::FETCH_OBJ);
         $this->log_debug("execute() found [".count($results)."] results", $results); 
-        return $results;
+        return self:: transform_boolean_values($results);
         break;
       case 'UPDATE':
         $this->statement = $this->pdo->prepare("{$this->sql}{$this->sql_where}");
@@ -688,7 +698,7 @@ class Statement {
   **/
   private function build_where_sql() {
 
-    //if we used a custom where clause, we do not need to build it
+    // if we used a custom where clause, we do not need to build it
     if ($this->used_custom_where || count($this->where_parameters) < 1) {
       return;
     }
@@ -815,6 +825,28 @@ class Statement {
     $this->where_parameters = NULL;
     $this->sql_where = $custom_where->get_where();
     $this->custom_where_rules = $custom_where->get_rules();
+  }
+
+  /**
+  * transforms query results that should be booleans to boolean literals from
+  * 0 or 1 tinyints.
+  *
+  * @return array
+  *
+  * @since 2016-7-18
+  * @author Matthew Ess <matthew@schooldatebooks.com>
+  **/
+
+  private function transform_boolean_values($results) {
+    foreach ($results as $result) {
+      foreach($this->model_object->get_data_properties() as $property) {
+        if (\PDope\Utilities:: get_pdo_type_from_generic_type($property->get_type()) == \PDO::PARAM_BOOL) {
+          $property_name = $property->name;
+          $result->$property_name = \Rhonda\Boolean:: evaluate($result->$property_name);
+        }
+      }
+    }
+    return $results;
   }
 
 }
