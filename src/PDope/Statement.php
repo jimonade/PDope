@@ -340,8 +340,9 @@ class Statement {
   * @author  Jim Harney <jim@schooldatebooks.com>
   **/
   private function bind_custom_where_rules() {
-
+    //error_log("HERE".print_r($this->custom_where_rules,true));
     if (! is_array($this->custom_where_rules)) {
+      error_log("??? ");
       return;
     }
 
@@ -550,6 +551,7 @@ class Statement {
   * @since   2016-5-21
   * @author  Jim Harney <jim@schooldatebooks.com>
   * @author  Deac Karns <deac@sdicg.com>
+  * @author  Wesley Dekkers <wesley@sdicg.com>
   **/
   public function execute() {
 
@@ -557,32 +559,36 @@ class Statement {
     $this->bind_special_parameters();
 
     $this->log_debug("execute() this->sql_verb [{$this->sql_verb}] sql is \n{$this->sql}{$this->sql_where}");
-
     switch ($this->sql_verb) {
       case 'SELECT':
         $this->statement = $this->pdo->prepare("{$this->sql}{$this->sql_where}");
         $this->bind_where_parameters();      
         $this->statement->execute();
         $results = $this->statement->fetchAll(\PDO::FETCH_OBJ);
+
         $this->log_debug("execute() found [".count($results)."] results", $results); 
         return self:: transform_boolean_values($results);
         break;
+
       case 'UPDATE':
         $this->statement = $this->pdo->prepare("{$this->sql}{$this->sql_where}");
         $this->bind_parameters($this->parameters);
         $this->bind_where_parameters();
         $this->statement->execute();
         break;
+
       case 'INSERT':
         $this->statement = $this->pdo->prepare($this->sql);
         $this->bind_parameters($this->parameters);
         $this->statement->execute();
         break;
+
       case 'DELETE':
         $this->statement = $this->pdo->prepare("{$this->sql}{$this->sql_where}");
         $this->bind_where_parameters();
         $this->statement->execute();
         break;
+
       default:
         throw new \Exception("sql query can't operate with verb [{$this->sql_verb}]");
     }
@@ -716,7 +722,7 @@ class Statement {
       } else {
         $sql .= "\tAND ";
       }
-
+      
       $name = $parameter->name;
       $type = $parameter->type;
       $value = $this->model_object->$name;
@@ -752,7 +758,6 @@ class Statement {
       }
 
     }
-
     $this->sql_where .= $sql;
 
     // $this->log_debug("build_where_sql() built \n$sql");
@@ -813,7 +818,6 @@ class Statement {
   * <code>
   * $custom_where = new \PDope\StatementCustomWhereBuilder($db);
   * $custom_where->add_where_rule("AND", "id", "=", "facility_1", "STRING");
-  * // $custom_where->add_where_rule("AND", "id", "IN", array("facility_1", "facility_2", "facility_3"), "STRING");
   * $custom_where->add_where_rule("AND", "active", "=", "1", "BOOL");
   * $db->use_custom_where($custom_where);
   * </code>
