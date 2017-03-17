@@ -625,7 +625,7 @@ class Statement {
       if($property->type == "ISO8601"){
         $sql .= "DATE_FORMAT($name,'%Y-%m-%dT%H:%i:%s') as $name \n";
       }else{
-        $sql .= "{$name} \n";
+        $sql .= "`{$name}` \n";
       }
     }
 
