@@ -570,7 +570,6 @@ class Statement {
         $this->statement->execute();
         $results = $this->statement->fetchAll(\PDO::FETCH_OBJ);
 
-        error_log("execute() found [".count($results)."] results"); 
         return self:: transform_boolean_values($results);
         break;
 
