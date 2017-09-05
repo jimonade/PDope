@@ -191,7 +191,7 @@ class CustomWhereBuilder {
   * @author  Jim Harney <jim@schooldatebooks.com>
   **/
   public function get_where() {
-    $sql = "\nWHERE";
+    //$sql = "\nWHERE";
 
     foreach($this->where_lines as $where_line){
       $sql .= " ".$where_line;
