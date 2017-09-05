@@ -30,7 +30,8 @@ class Statement {
   function __construct($sql_verb, $table_name, $model_object) {
     $this->debug = FALSE; 
 
-    $this->pdo = \PDope\Connection:: connection();
+    $pdo = new \PDope\Connection();
+    $this->pdo = $pdo->connection();
 
     $this->sql_verb = strtoupper($sql_verb);
     $this->check_verb();
@@ -498,7 +499,7 @@ class Statement {
   * @author  Jim Harney <jim@schooldatebooks.com>
   **/
   private function check_verb() {
-    if (! in_array($this->sql_verb, array("SELECT", "UPDATE", "INSERT", "DELETE"))) {
+    if (! in_array($this->sql_verb, array("SELECT", "UPDATE", "INSERT", "DELETE", "CUSTOM"))) {
       throw new \Exception("sql query can't operate with verb [{$this->sql_verb}]");
     }
   }
@@ -533,6 +534,10 @@ class Statement {
         $this->build_delete_sql();
         $this->build_where_sql();
         break;
+      case 'CUSTOM':
+        //$this->build_delete_sql();
+        $this->build_where_sql();
+        break;
       default:
         throw new \Exception("sql query can't operate with verb [{$this->sql_verb}]");
     }
@@ -560,6 +565,15 @@ class Statement {
 
     $this->log_debug("execute() this->sql_verb [{$this->sql_verb}] sql is \n{$this->sql}{$this->sql_where}");
     switch ($this->sql_verb) {
+      case 'CUSTOM':
+        $this->statement = $this->pdo->prepare("{$this->sql_where}");
+        $this->statement->execute();
+        $results = $this->statement->fetchAll(\PDO::FETCH_OBJ);
+
+        error_log("execute() found [".count($results)."] results"); 
+        return self:: transform_boolean_values($results);
+        break;
+
       case 'SELECT':
         $this->statement = $this->pdo->prepare("{$this->sql}{$this->sql_where}");
         $this->bind_where_parameters();      
@@ -625,7 +639,7 @@ class Statement {
       if($property->type == "ISO8601"){
         $sql .= "DATE_FORMAT($name,'%Y-%m-%dT%H:%i:%s') as $name \n";
       }else{
-        $sql .= "{$name} \n";
+        $sql .= "`{$name}` \n";
       }
     }
 
@@ -691,6 +705,28 @@ class Statement {
 
     // $this->log_debug("build_update_sql() built \n$sql");
   }  
+
+  /**
+  * builds sql text representation of the rule collection
+  *
+  * @example
+  * <code>
+  * $sql_where = $custom_where->get_query();
+  * </code>
+  *
+  * @return  string
+  *
+  * @since   2016-5-21
+  * @author  Wesley Dekkers <wesley@wesleydekkers.com>
+  **/
+  public function get_query() {
+    //$sql = "\nWHERE";
+
+    foreach($this->where_lines as $where_line){
+      $sql .= " ".$where_line;
+    }
+    return $sql;
+  }
 
   /**
   * builds the "WHERE" clause
@@ -830,8 +866,8 @@ class Statement {
   public function use_custom_where($custom_where) {
     $this->used_custom_where = TRUE;
     $this->where_parameters = NULL;
-    $this->sql_where = $custom_where->get_where();
-    $this->custom_where_rules = $custom_where->get_rules();
+    $this->sql_where = $custom_where;
+    //$this->custom_where_rules = $custom_where->get_rules();
   }
 
   /**
